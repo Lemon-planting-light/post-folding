@@ -1,0 +1,4 @@
+plugins:
+  post_folding_enabled:
+    default: true
+    client: true

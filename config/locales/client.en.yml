@@ -1,0 +1,6 @@
+en:
+  site_settings:
+    post_folding_enabled: Enable manual post foldings
+  js:
+    post_folding:
+      toggle_folding: Toggle folding the post

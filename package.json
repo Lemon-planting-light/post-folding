@@ -1,0 +1,10 @@
+{
+  "name": "post-folding",
+  "version": "0.0.1",
+  "repository": "https://github.com/Lemon-planting-light/post-folding",
+  "author": "Virginia Senioria",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint-config-discourse": "^3.1.0"
+  }
+}
