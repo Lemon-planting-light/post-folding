@@ -9,6 +9,11 @@ class PostFoldingsController < ::ApplicationController
       return
     end
     post = Post.find_by(id: params[:post])
+    if post.post_number == 1
+      response.status = 400
+      render json: { succeed: false, message: I18n.t("post_foldings.no_fold_first") }
+      return
+    end
     info = DB.query_single("SELECT folded_by_id FROM posts_folded fd WHERE fd.id = ?", post.id)
     if info.empty?
       with_perm guardian.can_fold_post?(post) do
@@ -29,6 +34,7 @@ class PostFoldingsController < ::ApplicationController
     if perm
       block.call
     else
+      response.status = 401
       render json: { succeed: false, message: I18n.t("post_foldings.no_perm") }
     end
   end
