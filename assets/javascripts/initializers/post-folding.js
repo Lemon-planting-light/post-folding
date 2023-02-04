@@ -4,7 +4,11 @@ import { ajax } from "discourse/lib/ajax";
 import { getOwner } from "discourse-common/lib/get-owner";
 
 function init(api) {
-  api.addPostMenuButton("toggle-folding", () => {
+  const curUser = api.getCurrentUser();
+  api.addPostMenuButton("toggle-folding", (post) => {
+    if (post.user.id !== curUser.id && !curUser.can_manipulate_post_foldings) {
+      return;
+    }
     return {
       action: "toggleFolding",
       icon: "compress",
