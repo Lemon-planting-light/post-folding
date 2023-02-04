@@ -63,9 +63,12 @@ after_initialize do
     in_any_groups?(SiteSetting.post_folding_manipulatable_groups_map)
   end
 
-  add_to_serializer(:post, :is_folded) do
-    return @is_folded[0] if @is_folded
-    @is_folded = [!DB.query_single("SELECT folded_by_id FROM posts_folded fd WHERE fd.id = ?", id).empty?]
-    @is_folded[0]
+  add_to_serializer(:post, :folded_by) do
+    return @folded_by[0] if @folded_by
+    @folded_by = DB.query_single("SELECT folded_by_id FROM posts_folded fd WHERE fd.id = ?", id)
+    if @folded_by.empty?
+      @folded_by = [nil]
+    end
+    @folded_by[0]
   end
 end

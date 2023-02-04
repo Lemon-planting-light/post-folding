@@ -5,6 +5,7 @@ class PostFoldingsController < ::ApplicationController
 
   def toggle
     unless SiteSetting.post_folding_enabled
+      response.status = 405
       render json: { succeed: false, message: I18n.t("post_foldings.not_enabled") }
       return
     end
