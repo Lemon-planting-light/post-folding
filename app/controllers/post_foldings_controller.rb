@@ -4,6 +4,10 @@ class PostFoldingsController < ::ApplicationController
   before_action :ensure_logged_in
 
   def toggle
+    unless SiteSetting.post_folding_enabled
+      render json: { succeed: false, message: I18n.t('post_foldings.not_enabled') }
+      return
+    end
     post = Post.find_by(id: params[:post])
     info = DB.query_single('SELECT folded_by_id FROM posts_folded fd WHERE fd.id = ?', post.id)
     if info.empty?

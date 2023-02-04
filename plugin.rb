@@ -40,10 +40,10 @@ after_initialize do
 
   class ::Guardian
     def can_fold_post?(post)
-      is_my_own?(post) || user.has_trust_level?(TrustLevel[4])
+      is_my_own?(post) || user.in_any_groups(SiteSetting.post_folding_manipulatable_groups_map)
     end
     def can_unfold_post?(post, folded_by)
-      return true if user.has_trust_level?(TrustLevel[4])
+      return true if user.in_any_groups(SiteSetting.post_folding_manipulatable_groups_map)
       is_my_own?(post) && folded_by == post.user.id
     end
   end
