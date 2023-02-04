@@ -27,27 +27,47 @@ after_initialize do
     post "/post_foldings" => "post_foldings#toggle"
   end
 
-  # Do the patch
-  class ::TopicView
-    private
+  reloadable_patch do |plugin|
 
-    def setup_filtered_posts
-      PostFolding.orig_setup_filtered_posts.bind(self).call
-      if SiteSetting.post_folding_enabled
-        # TODO: add topics containing folded posts to DB, to have better condition (though not quite optimizing)
-        @contains_gaps = true
-        @filtered_posts = @filtered_posts.where("posts.id NOT IN (SELECT fd.id FROM posts_folded fd)")
+    class ::TopicView
+      private
+
+      def setup_filtered_posts
+        PostFolding.orig_setup_filtered_posts.bind(self).call
+        STDERR.puts "filters: #{@filter}"
+        if SiteSetting.post_folding_enabled && @filter.to_s != "unfold_all"
+          # TODO: add topics containing folded posts to DB, to have better condition (though not quite optimizing)
+          @contains_gaps = true
+          @filtered_posts = @filtered_posts.where("posts.id NOT IN (SELECT fd.id FROM posts_folded fd)")
+        end
       end
     end
+
+    class ::Group
+      scope :can_manipulate_post_foldings, -> (user) { user.can_manipulate_post_foldings? }
+    end
+
   end
 
-  class ::Guardian
-    def can_fold_post?(post)
-      is_my_own?(post) || user.in_any_groups?(SiteSetting.post_folding_manipulatable_groups_map)
-    end
-    def can_unfold_post?(post, folded_by)
-      return true if user.in_any_groups?(SiteSetting.post_folding_manipulatable_groups_map)
-      is_my_own?(post) && folded_by == post.user.id
-    end
+  add_to_class(:guardian, :can_fold_post?) do |post|
+    is_my_own?(post) || (user && user.can_manipulate_post_foldings?)
   end
+  add_to_class(:guardian, :can_unfold_post?) do |post, folded_by|
+    return true if (user && user.can_manipulate_post_foldings?)
+    is_my_own?(post) && folded_by == post.user.id
+  end
+
+  add_to_class(:user, :can_manipulate_post_foldings?) do
+    in_any_groups?(SiteSetting.post_folding_manipulatable_groups_map)
+  end
+  add_to_serializer(:current_user, :can_manipulate_post_foldings) do
+    user.can_manipulate_post_foldings?
+  end
+
+  add_to_serializer(:post, :is_folded) do
+    return @is_folded[0] if @is_folded
+    @is_folded = [!DB.query_single("SELECT folded_by_id FROM posts_folded fd WHERE fd.id = ?", id).empty?]
+    @is_folded[0]
+  end
+
 end

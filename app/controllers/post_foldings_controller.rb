@@ -34,7 +34,7 @@ class PostFoldingsController < ::ApplicationController
     if perm
       block.call
     else
-      response.status = 401
+      response.status = 403
       render json: { succeed: false, message: I18n.t("post_foldings.no_perm") }
     end
   end
