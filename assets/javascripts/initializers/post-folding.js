@@ -82,6 +82,17 @@ function init(api) {
       })
       .catch(popupAjaxError);
   });
+  api.includePostAttributes("folded_by");
+  api.addPostClassesCallback((attrs) => {
+    // Not folded
+    if (attrs.folded_by === null) {
+      return [];
+    } else if (attrs.folded_by === curUser.id) {
+      return ["folded-by-me"];
+    } else {
+      return ["folded-by-others"];
+    }
+  });
 }
 
 export default {
