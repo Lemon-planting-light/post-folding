@@ -4,28 +4,80 @@ import { ajax } from "discourse/lib/ajax";
 import { getOwner } from "discourse-common/lib/get-owner";
 
 function init(api) {
+
+  api.includePostAttributes(
+    "folded_by"
+  );
+
+  api.addPostClassesCallback(attrs => {
+    if (attrs.folded_by) {
+      return ["folded"];
+    }
+  });
+
   const curUser = api.getCurrentUser();
+
+  if (!curUser) return;
+
   api.addPostMenuButton("toggle-folding", (post) => {
     if (post.user.id !== curUser.id && !curUser.can_manipulate_post_foldings) {
       return;
     }
-    return {
-      action: "toggleFolding",
-      icon: "compress",
-      title: "post_folding.toggle_folding",
-      position: "second-last-hidden",
-    };
+    if (post.post_number === 1 || post.deleted_at) {
+      return;
+    }
+    if (post.folded_by) {
+      if (!curUser.can_manipulate_post_foldings && post.folded_by !== curUser.id) {
+        return {
+          action: "toggleFolding",
+          icon: "expand",
+          title: "post_folding.toggle_folding", // TODO: add new title post_folding.toggle_folding_unavailable
+          position: "second-last-hidden",
+          disabled: "true"
+        };
+      } else {
+        return {
+          action: "toggleFolding",
+          icon: "expand",
+          title: "post_folding.toggle_folding",
+          position: "second-last-hidden",
+        };
+      }
+    } else {
+      return {
+        action: "toggleFolding",
+        icon: "compress",
+        title: "post_folding.toggle_folding",
+        position: "second-last-hidden",
+      };
+    }
   });
+  
   // Arrow functions won't take this, so use functions
   api.attachWidgetAction("post", "toggleFolding", function () {
+    const post = this.model;
     ajax("/post_foldings", {
       method: "POST",
-      data: { post: this.model.id },
+      data: { post: post.id },
     })
       .then((res) => {
         if (!res.succeed) {
           getOwner(this).lookup("service:dialog").alert(res.message);
           return;
+        } else {
+          if (post.folded_by) {
+            post.setProperties({
+              folded_by: null,
+            });
+          } else {
+            post.setProperties({
+              folded_by: this.currentUser.id,
+            });
+          }
+          this.appEvents.trigger("post-stream:refresh", {
+            id: post.id,
+          });
+          this.appEvents.trigger("header:update-topic", post);
         }
       })
       .catch(popupAjaxError);

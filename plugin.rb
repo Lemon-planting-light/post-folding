@@ -9,6 +9,13 @@
 
 enabled_site_setting :post_folding_enabled
 
+register_asset "stylesheets/post_folding.scss"
+if respond_to?(:register_svg_icon)
+  register_svg_icon "expand"
+  register_svg_icon "compress"
+end
+
+
 module ::PostFolding
   def self.init
     @@orig_setup_filtered_posts = ::TopicView.instance_method(:setup_filtered_posts)
