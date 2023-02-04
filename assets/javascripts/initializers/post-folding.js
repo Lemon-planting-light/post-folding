@@ -9,15 +9,20 @@ function init(api) {
     "folded_by"
   );
 
-  api.addPostClassesCallback(attrs => {
-    if (attrs.folded_by) {
-      return ["folded"];
+  api.addPostClassesCallback((attrs) => {
+    // Not folded
+    if (attrs.folded_by === null) {
+      return [];
+    } else if (attrs.folded_by === curUser.id) {
+      return ["folded", "folded-by-me"];
+    } else {
+      return ["folded", "folded-by-others"];
     }
   });
 
   const curUser = api.getCurrentUser();
 
-  if (!curUser) return;
+  if (!curUser) { return; }
 
   api.addPostMenuButton("toggle-folding", (post) => {
     if (post.user.id !== curUser.id && !curUser.can_manipulate_post_foldings) {
@@ -52,7 +57,7 @@ function init(api) {
       };
     }
   });
-  
+
   // Arrow functions won't take this, so use functions
   api.attachWidgetAction("post", "toggleFolding", function () {
     const post = this.model;
@@ -81,17 +86,6 @@ function init(api) {
         }
       })
       .catch(popupAjaxError);
-  });
-  api.includePostAttributes("folded_by");
-  api.addPostClassesCallback((attrs) => {
-    // Not folded
-    if (attrs.folded_by === null) {
-      return [];
-    } else if (attrs.folded_by === curUser.id) {
-      return ["folded-by-me"];
-    } else {
-      return ["folded-by-others"];
-    }
   });
 }
 
