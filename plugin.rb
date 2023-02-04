@@ -41,13 +41,27 @@ after_initialize do
     end
   end
 
+  add_to_class(:user, :can_fold_others?) do
+    @can_fold_others ||=
+    begin
+      return true if admin?
+      in_any_groups?(SiteSetting.post_folding_manipulatable_groups_map)
+    end
+    @can_fold_others == :true
+  end
+  add_to_serializer(:current_user, :can_fold_others) { object.can_fold_others? }
+
   class ::Guardian
     def can_fold_post?(post)
-      is_my_own?(post) || user.in_any_groups?(SiteSetting.post_folding_manipulatable_groups_map)
+      user && (
+        is_my_own?(post) || user.can_fold_others?
+      )
     end
     def can_unfold_post?(post, folded_by)
-      return true if user.in_any_groups?(SiteSetting.post_folding_manipulatable_groups_map)
-      is_my_own?(post) && folded_by == post.user.id
+      user && (
+        (is_my_own?(post) && folded_by == post.user.id) || user.can_fold_others?
+      )
     end
   end
+
 end
