@@ -3,20 +3,90 @@ import { popupAjaxError } from "discourse/lib/ajax-error";
 import { ajax } from "discourse/lib/ajax";
 import { getOwner } from "discourse-common/lib/get-owner";
 
-function init(api) {
-  api.includePostAttributes(
-    "folded_by"
-  );
+const pluginId = "post-folding";
 
-  api.addPostClassesCallback(attrs => {
-    if (attrs.folded_by) {
-      return ["folded"];
+function init(api) {
+  api.modifyClass("model:post-stream", {
+    pluginId,
+
+    unfoldForAll() {
+      this.cancelFilter();
+      this.set("filter", "unfold_all");
+      return this.refreshAndJumpToSecondVisible();
+    },
+
+    enfoldForAll() {
+      this.cancelFilter();
+      return this.refreshAndJumpToSecondVisible();
+    },
+  });
+
+  api.reopenWidget("post", {
+    toggleUnfoldAll() {
+      if (this._topicController().filter) {
+        this._topicController()
+          .model.postStream.enfoldForAll()
+          .then(() => {
+            this._refreshController();
+          });
+      } else {
+        this._topicController()
+          .model.postStream.unfoldForAll()
+          .then(() => {
+            this._refreshController();
+          });
+      }
+    },
+
+    _refreshController() {
+      this._topicController().updateQueryParams();
+      this._topicController().appEvents.trigger("post-folding-topic-updated");
+    },
+
+    _topicController() {
+      return this.register.lookup("controller:topic");
+    },
+  });
+
+  api.decorateWidget("post-contents:after-cooked", (helper) => {
+    if (helper?.getModel()?.post_number !== 1) {
+      return;
+    }
+    function _topicController() {
+      return helper.register.lookup("controller:topic");
+    }
+    // TODO: Add I18n support
+    return helper.h("div.post-folding-tip", [
+      helper.h("hr"),
+      helper.h("p", "本主题开启了帖子折叠功能。"),
+      helper.attach("button", {
+        action: "toggleUnfoldAll",
+        contents: _topicController().filter ? "点此折叠所有被展开的帖子" : "点此展开所有被折叠的帖子",
+        className: `btn btn-link btn-post-unfold-all`,
+      }),
+    ]);
+  });
+
+  api.includePostAttributes("folded_by");
+
+  api.addPostClassesCallback((attrs) => {
+    // Not folded
+    if (attrs.folded_by === null) {
+      return [];
+    } else {
+      if (attrs.folded_by === curUser.id) {
+        return ["folded", "folded-by-me"];
+      } else {
+        return ["folded", "folded-by-others"];
+      }
     }
   });
 
   const curUser = api.getCurrentUser();
 
-  if (!curUser) return;
+  if (!curUser) {
+    return;
+  }
 
   api.addPostMenuButton("toggle-folding", (post) => {
     if (post.user.id !== curUser.id && !curUser.can_manipulate_post_foldings) {
@@ -32,7 +102,8 @@ function init(api) {
           icon: "expand",
           title: "post_folding.toggle_folding", // TODO: add new title post_folding.toggle_folding_unavailable
           position: "second-last-hidden",
-          disabled: "true"
+          className: "toggle-folding",
+          disabled: "true",
         };
       } else {
         return {
@@ -40,6 +111,7 @@ function init(api) {
           icon: "expand",
           title: "post_folding.toggle_folding",
           position: "second-last-hidden",
+          className: "toggle-folding",
         };
       }
     } else {
@@ -48,6 +120,7 @@ function init(api) {
         icon: "compress",
         title: "post_folding.toggle_folding",
         position: "second-last-hidden",
+        className: "toggle-folding",
       };
     }
   });
@@ -84,7 +157,7 @@ function init(api) {
 }
 
 export default {
-  name: "post-folding",
+  name: pluginId,
 
   initialize(container) {
     if (!container.lookup("site-settings:main").post_folding_enabled) {
