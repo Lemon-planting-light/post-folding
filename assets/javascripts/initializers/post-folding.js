@@ -4,10 +4,7 @@ import { ajax } from "discourse/lib/ajax";
 import { getOwner } from "discourse-common/lib/get-owner";
 
 function init(api) {
-
-  api.includePostAttributes(
-    "folded_by"
-  );
+  api.includePostAttributes("folded_by");
 
   api.addPostClassesCallback((attrs) => {
     // Not folded
@@ -22,7 +19,9 @@ function init(api) {
 
   const curUser = api.getCurrentUser();
 
-  if (!curUser) { return; }
+  if (!curUser) {
+    return;
+  }
 
   api.addPostMenuButton("toggle-folding", (post) => {
     if (post.user.id !== curUser.id && !curUser.can_manipulate_post_foldings) {
@@ -38,7 +37,7 @@ function init(api) {
           icon: "expand",
           title: "post_folding.toggle_folding", // TODO: add new title post_folding.toggle_folding_unavailable
           position: "second-last-hidden",
-          disabled: "true"
+          disabled: "true",
         };
       } else {
         return {

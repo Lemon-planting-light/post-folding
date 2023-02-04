@@ -15,7 +15,6 @@ if respond_to?(:register_svg_icon)
   register_svg_icon "compress"
 end
 
-
 module ::PostFolding
   def self.init
     @@orig_setup_filtered_posts = ::TopicView.instance_method(:setup_filtered_posts)
@@ -73,9 +72,7 @@ after_initialize do
   add_to_serializer(:post, :folded_by) do
     return @folded_by[0] if @folded_by
     @folded_by = DB.query_single("SELECT folded_by_id FROM posts_folded fd WHERE fd.id = ?", id)
-    if @folded_by.empty?
-      @folded_by = [nil]
-    end
+    @folded_by = [nil] if @folded_by.empty?
     @folded_by[0]
   end
 end
