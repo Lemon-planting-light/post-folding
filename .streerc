@@ -1,2 +1,2 @@
---print-width=100
+--print-width=120
 --plugins=plugin/trailing_comma

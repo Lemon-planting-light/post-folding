@@ -20,20 +20,23 @@ end
 
 after_initialize do
   PostFolding.init
-  load File.expand_path('../app/controllers/post_foldings_controller.rb', __FILE__)
+  load File.expand_path("../app/controllers/post_foldings_controller.rb", __FILE__)
+
+  # stree-ignore
   Discourse::Application.routes.append do
-    post '/post_foldings' => 'post_foldings#toggle'
+    post "/post_foldings" => "post_foldings#toggle"
   end
 
   # Do the patch
   class ::TopicView
     private
+
     def setup_filtered_posts
       PostFolding.orig_setup_filtered_posts.bind(self).call
       if SiteSetting.post_folding_enabled
         # TODO: add topics containing folded posts to DB, to have better condition (though not quite optimizing)
         @contains_gaps = true
-        @filtered_posts = @filtered_posts.where('posts.id NOT IN (SELECT fd.id FROM posts_folded fd)')
+        @filtered_posts = @filtered_posts.where("posts.id NOT IN (SELECT fd.id FROM posts_folded fd)")
       end
     end
   end

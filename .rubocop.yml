@@ -1,2 +1,6 @@
 inherit_gem:
   rubocop-discourse: stree-compat.yml
+AllCops:
+  NewCops: enable
+Security/CompoundHash:
+  Enabled: true
