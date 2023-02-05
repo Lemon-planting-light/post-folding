@@ -5,3 +5,4 @@ en:
   js:
     post_folding:
       toggle_folding: Toggle folding the post
+      toggle_folding_enabled: Toggle enabling folding in the topic
