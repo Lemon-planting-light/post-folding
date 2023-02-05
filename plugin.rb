@@ -70,8 +70,8 @@ after_initialize do
   add_to_class(:guardian, :can_change_topic_post_folding?) do |topic|
     return true if user && user.can_manipulate_post_foldings?
     return false unless is_my_own?(topic)
-    status = TopicFoldingStatus.find_by(topic.id)
-    !status || status.enabled_by_id == user.id
+    info = TopicFoldingStatus.find_by(id: topic.id)
+    !info || info.enabled_by_id == user.id
   end
 
   # stree-ignore
@@ -82,21 +82,20 @@ after_initialize do
     in_any_groups?(SiteSetting.post_folding_manipulatable_groups_map)
   end
 
-  add_to_serializer(:post, :folded_by) do
-    # It's better to use inductive types, which is impossible in ruby ><
-    return @folded_by[0] if @folded_by
-    @folded_by = DB.query_single("SELECT folded_by_id FROM posts_folded fd WHERE fd.id = ?", id)
-    @folded_by = [nil] if @folded_by.empty?
-    @folded_by[0]
-  end
-  add_to_serializer(:post, :in_folding_enabled_topic) do
-    return @in_folding_enabled_topic if @in_folding_enabled_topic
-    @in_folding_enabled_topic = TopicFoldingStatus.enabled?(@topic.id)
-  end
-
-  add_to_serializer(:topic_view, :folding_enabled_by) do
+  add_to_class(:topic, :folding_enabled_by) do
     return @folding_enabled_by[0] if @folding_enabled_by
     @folding_enabled_by = [TopicFoldingStatus.find_by(id: id)&.enabled_by_id]
     @folding_enabled_by[0]
+  end
+
+  add_to_serializer(:post, :folded_by) do
+    DB.query_single("SELECT folded_by_id FROM posts_folded fd WHERE fd.id = ?", id)[0]
+  end
+  add_to_serializer(:post, :in_folding_enabled_topic) do
+    !@topic.folding_enabled_by.nil?
+  end
+
+  add_to_serializer(:topic_view, :folding_enabled_by) do
+    topic.folding_enabled_by
   end
 end
