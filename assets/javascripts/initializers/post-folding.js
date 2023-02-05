@@ -27,33 +27,33 @@ function init(api) {
     if (post.user.id !== curUser.id && !curUser.can_manipulate_post_foldings) {
       return;
     }
-    if (post.post_number === 1 || post.deleted_at) {
+    if (post.deleted_at) {
       return;
     }
-    if (post.folded_by) {
-      if (!curUser.can_manipulate_post_foldings && post.folded_by !== curUser.id) {
-        return {
-          action: "toggleFolding",
-          icon: "expand",
-          title: "post_folding.toggle_folding", // TODO: add new title post_folding.toggle_folding_unavailable
-          position: "second-last-hidden",
-          disabled: "true",
-        };
-      } else {
-        return {
-          action: "toggleFolding",
-          icon: "expand",
-          title: "post_folding.toggle_folding",
-          position: "second-last-hidden",
-        };
-      }
-    } else {
+    if (post.post_number === 1) {
       return {
-        action: "toggleFolding",
-        icon: "compress",
-        title: "post_folding.toggle_folding",
+        action: "toggleFoldingEnabled",
+        title: "post_folding.toggle_folding_enabled",
+        icon: "voicemail",
         position: "second-last-hidden",
       };
+    }
+    const res = {
+      action: "toggleFolding",
+      title: "post_folding.toggle_folding", // TODO: add new title post_folding.toggle_folding_unavailable
+      position: "second-last-hidden",
+    };
+    if (post.folded_by) {
+      if (!curUser.can_manipulate_post_foldings && post.folded_by !== curUser.id) {
+        return Object.assign(res, {
+          icon: "expand",
+          disabled: "true",
+        });
+      } else {
+        return Object.assign(res, { icon: "expand" });
+      }
+    } else {
+      return Object.assign(res, { icon: "compress" });
     }
   });
 
@@ -68,20 +68,33 @@ function init(api) {
         if (!res.succeed) {
           getOwner(this).lookup("service:dialog").alert(res.message);
           return;
-        } else {
-          if (post.folded_by) {
-            post.setProperties({
-              folded_by: null,
-            });
-          } else {
-            post.setProperties({
-              folded_by: this.currentUser.id,
-            });
-          }
-          this.appEvents.trigger("post-stream:refresh", {
-            id: post.id,
+        }
+        if (post.folded_by) {
+          post.setProperties({
+            folded_by: null,
           });
-          this.appEvents.trigger("header:update-topic", post);
+        } else {
+          post.setProperties({
+            folded_by: curUser.id,
+          });
+        }
+        this.appEvents.trigger("post-stream:refresh", {
+          id: post.id,
+        });
+        this.appEvents.trigger("header:update-topic", post);
+      })
+      .catch(popupAjaxError);
+  });
+
+  api.attachWidgetAction("post", "toggleFoldingEnabled", function () {
+    ajax("/post_foldings/toggle_folding_enabled", {
+      method: "POST",
+      data: { topic: this.model.topic.id },
+    })
+      .then((res) => {
+        if (!res.succeed) {
+          getOwner(this).lookup("service:dialog").alert(res.message);
+          return;
         }
       })
       .catch(popupAjaxError);

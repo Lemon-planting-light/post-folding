@@ -13,6 +13,7 @@ register_asset "stylesheets/post_folding.scss"
 if respond_to?(:register_svg_icon)
   register_svg_icon "expand"
   register_svg_icon "compress"
+  register_svg_icon "voicemail"
 end
 
 module ::PostFolding
@@ -27,10 +28,14 @@ end
 after_initialize do
   PostFolding.init
   load File.expand_path("../app/controllers/post_foldings_controller.rb", __FILE__)
+  load File.expand_path("../app/models/topic_folding_status.rb", __FILE__)
 
   # stree-ignore
   Discourse::Application.routes.append do
     post "/post_foldings" => "post_foldings#toggle"
+    get "/post_foldings/is_folding_enabled" => "post_foldings#is_folding_enabled"
+    put "/post_foldings/set_folding_enabled" => "post_foldings#set_folding_enabled"
+    post "/post_foldings/toggle_folding_enabled" => "post_foldings#toggle_folding_enabled"
   end
 
   reloadable_patch do |plugin|
@@ -38,8 +43,9 @@ after_initialize do
       private
 
       def setup_filtered_posts
+        STDERR.puts "self: #{self}" # Sometimes the following bind may error ><
         PostFolding.orig_setup_filtered_posts.bind(self).call
-        if SiteSetting.post_folding_enabled && @filter.to_s != "unfold_all"
+        if SiteSetting.post_folding_enabled && @filter.to_s != "unfold_all" && TopicFoldingStatus.enabled?(@topic.id)
           # TODO: add topics containing folded posts to DB, to have better condition (though not quite optimizing)
           @contains_gaps = true
           @filtered_posts = @filtered_posts.where("posts.id NOT IN (SELECT fd.id FROM posts_folded fd)")
@@ -60,6 +66,12 @@ after_initialize do
     return true if user && user.can_manipulate_post_foldings?
     is_my_own?(post) && folded_by == post.user.id
   end
+  add_to_class(:guardian, :can_change_topic_post_folding?) do |topic|
+    return true if user && user.can_manipulate_post_foldings?
+    return false unless is_my_own?(topic)
+    status = TopicFoldingStatus.find_by(topic.id)
+    !status || status.enabled_by_id == user.id
+  end
 
   # stree-ignore
   add_to_serializer(:current_user, :can_manipulate_post_foldings) do
@@ -70,9 +82,15 @@ after_initialize do
   end
 
   add_to_serializer(:post, :folded_by) do
+    # It's better to use inductive types, which is impossible in ruby ><
     return @folded_by[0] if @folded_by
     @folded_by = DB.query_single("SELECT folded_by_id FROM posts_folded fd WHERE fd.id = ?", id)
     @folded_by = [nil] if @folded_by.empty?
     @folded_by[0]
+  end
+
+  add_to_serializer(:basic_topic, :folding_enabled) do
+    return @folding_enabled if @folding_enabled != nil
+    @folding_enabled = TopicFoldingStatus.enabled?(id)
   end
 end
