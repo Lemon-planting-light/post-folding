@@ -9,7 +9,6 @@ import { getOwner } from "discourse-common/lib/get-owner";
 const pluginId = "post-folding";
 
 function init(api) {
-
   api.modifyClass("model:post-stream", {
     pluginId,
 
@@ -29,18 +28,17 @@ function init(api) {
     toggleUnfoldAll() {
       if (this._topicController().filter) {
         this._topicController()
-        .model.postStream.enfoldForAll()
-        .then(() => {
-          this._refreshController();
-        });
+          .model.postStream.enfoldForAll()
+          .then(() => {
+            this._refreshController();
+          });
       } else {
         this._topicController()
-        .model.postStream.unfoldForAll()
-        .then(() => {
-          this._refreshController();
-        });
+          .model.postStream.unfoldForAll()
+          .then(() => {
+            this._refreshController();
+          });
       }
-
     },
 
     _refreshController() {
@@ -53,8 +51,10 @@ function init(api) {
     },
   });
 
-  api.decorateWidget("post-contents:after-cooked", helper => {
-    if (helper?.getModel()?.post_number !== 1) { return; }
+  api.decorateWidget("post-contents:after-cooked", (helper) => {
+    if (helper?.getModel()?.post_number !== 1) {
+      return;
+    }
     function _topicController() {
       return helper.register.lookup("controller:topic");
     }
@@ -70,9 +70,7 @@ function init(api) {
     ]);
   });
 
-  api.includePostAttributes(
-    "folded_by"
-  );
+  api.includePostAttributes("folded_by");
 
   api.addPostClassesCallback((attrs) => {
     // Not folded
