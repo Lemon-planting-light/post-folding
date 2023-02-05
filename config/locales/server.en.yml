@@ -1,6 +1,6 @@
 en:
   post_foldings:
     no_perm: No permission to perform the operation
-    internal_error: Server internal error when folding the post
+    internal_error: 500 Server internal error
     no_fold_first: You can't fold the first post of a topic
     not_enabled_in_topic: Post folding is not enabled in this topic

@@ -1,0 +1,15 @@
+zh_CN:
+  site_settings:
+    post_folding_enabled: "启用帖子折叠插件"
+    post_folding_manipulatable_groups: "可以管理帖子折叠状态的组"
+  js:
+    post_folding:
+      folding_post: "折叠帖子"
+      unfolding_post: "取消折叠帖子"
+      unfolding_unavailable: "您无权取消折叠帖子"
+      enable_toggle_folding: "在该话题中打开帖子折叠功能"
+      disable_toggle_folding: "在该话题中关闭帖子折叠功能"
+    post_folding_tip:
+      tip_text: "本话题开启了帖子折叠功能："
+      unfold_all: "点此展开所有被折叠的帖子"
+      enfold_all: "点此折叠所有被展开的帖子"

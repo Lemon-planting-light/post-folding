@@ -2,6 +2,7 @@ import { withPluginApi } from "discourse/lib/plugin-api";
 import { popupAjaxError } from "discourse/lib/ajax-error";
 import { ajax } from "discourse/lib/ajax";
 import { getOwner } from "discourse-common/lib/get-owner";
+import I18n from "I18n";
 
 const pluginId = "post-folding";
 
@@ -12,12 +13,16 @@ function init(api) {
     unfoldForAll() {
       this.cancelFilter();
       this.set("filter", "unfold_all");
-      return this.refreshAndJumpToSecondVisible();
+      return this.refresh();
     },
 
     enfoldForAll() {
       this.cancelFilter();
-      return this.refreshAndJumpToSecondVisible();
+      return this.refresh();
+    },
+
+    refreshPostStream() {
+      return this.refresh();
     },
   });
 
@@ -37,6 +42,13 @@ function init(api) {
           });
       }
     },
+    refreshPostStream() {
+      this._topicController()
+        .model.postStream.refreshPostStream()
+        .then(() => {
+          this._refreshController();
+        });
+    },
 
     _refreshController() {
       this._topicController().updateQueryParams();
@@ -52,22 +64,28 @@ function init(api) {
     if (helper?.getModel()?.post_number !== 1) {
       return;
     }
+
+    if (helper.getModel().topic.folding_enabled_by == null) {
+      return;
+    }
     function _topicController() {
       return helper.register.lookup("controller:topic");
     }
-    // TODO: Add I18n support
+
     return helper.h("div.post-folding-tip", [
       helper.h("hr"),
-      helper.h("p", "本主题开启了帖子折叠功能。"),
+      helper.h("p", I18n.t("post_folding_tip.tip_text")),
       helper.attach("button", {
         action: "toggleUnfoldAll",
-        contents: _topicController().filter ? "点此折叠所有被展开的帖子" : "点此展开所有被折叠的帖子",
+        contents: _topicController().filter
+          ? I18n.t("post_folding_tip.enfold_all")
+          : I18n.t("post_folding_tip.unfold_all"),
         className: `btn btn-link btn-post-unfold-all`,
       }),
     ]);
   });
 
-  api.includePostAttributes("folded_by");
+  api.includePostAttributes("folded_by", "in_folding_enabled_topic");
 
   api.addPostClassesCallback((attrs) => {
     // Not folded
@@ -88,38 +106,67 @@ function init(api) {
     return;
   }
 
-  api.addPostMenuButton("toggle-folding", (post) => {
+  api.addPostMenuButton("post-toggle-folding", (post) => {
+    if (post.in_folding_enabled_topic !== true) {
+      return;
+    }
+    if (post.user.id !== curUser.id && !curUser.can_manipulate_post_foldings) {
+      return;
+    }
+    if (post.deleted_at || post.post_number === 1) {
+      return;
+    }
+    const res = {
+      action: "toggleFolding",
+      position: "second-last-hidden",
+      className: "post-toggle-folding",
+    };
+    if (post.folded_by) {
+      if (!curUser.can_manipulate_post_foldings && post.folded_by !== curUser.id) {
+        return Object.assign(res, {
+          icon: "expand",
+          title: "post_folding.unfolding_post",
+          disabled: "true",
+        });
+      } else {
+        return Object.assign(res, {
+          icon: "expand",
+          title: "post_folding.unfolding_post",
+        });
+      }
+    } else {
+      return Object.assign(res, {
+        icon: "compress",
+        title: "post_folding.folding_post",
+      });
+    }
+  });
+
+  api.addPostMenuButton("topic-toggle-folding", (post) => {
     if (post.user.id !== curUser.id && !curUser.can_manipulate_post_foldings) {
       return;
     }
     if (post.deleted_at) {
       return;
     }
-    if (post.post_number === 1) {
-      return {
-        action: "toggleFoldingEnabled",
-        title: "post_folding.toggle_folding_enabled",
-        icon: "voicemail",
-        position: "second-last-hidden",
-        className: "toggle-folding",
-      };
+    if (post.post_number !== 1) {
+      return;
     }
     const res = {
-      action: "toggleFolding",
-      title: "post_folding.toggle_folding", // TODO: add new title post_folding.toggle_folding_unavailable
+      action: "toggleFoldingEnabled",
       position: "second-last-hidden",
+      className: "topic-toggle-folding",
     };
-    if (post.folded_by) {
-      if (!curUser.can_manipulate_post_foldings && post.folded_by !== curUser.id) {
-        return Object.assign(res, {
-          icon: "expand",
-          disabled: "true",
-        });
-      } else {
-        return Object.assign(res, { icon: "expand" });
-      }
+    if (post.in_folding_enabled_topic) {
+      return Object.assign(res, {
+        title: "post_folding.disable_toggle_folding",
+        icon: "toggle-on",
+      });
     } else {
-      return Object.assign(res, { icon: "compress" });
+      return Object.assign(res, {
+        title: "post_folding.enable_toggle_folding",
+        icon: "toggle-off",
+      });
     }
   });
 
@@ -153,15 +200,32 @@ function init(api) {
   });
 
   api.attachWidgetAction("post", "toggleFoldingEnabled", function () {
+    const post = this.model;
     ajax("/post_foldings/toggle_folding_enabled", {
       method: "POST",
-      data: { topic: this.model.topic.id },
+      data: { topic: post.topic.id },
     })
       .then((res) => {
         if (!res.succeed) {
           getOwner(this).lookup("service:dialog").alert(res.message);
           return;
         }
+        if (post.topic.folding_enabled_by) {
+          post.topic.setProperties({
+            folding_enabled_by: null,
+          });
+          post.setProperties({
+            in_folding_enabled_topic: false,
+          });
+        } else {
+          post.topic.setProperties({
+            folding_enabled_by: curUser.id,
+          });
+          post.setProperties({
+            in_folding_enabled_topic: true,
+          });
+        }
+        this.sendWidgetAction("refreshPostStream");
       })
       .catch(popupAjaxError);
   });

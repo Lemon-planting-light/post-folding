@@ -4,5 +4,12 @@ en:
     post_folding_manipulatable_groups: Groups that can manipulate post foldings
   js:
     post_folding:
-      toggle_folding: Toggle folding the post
-      toggle_folding_enabled: Toggle enabling folding in the topic
+      folding_post: Collapse this post
+      unfolding_post: "Expand this post"
+      unfolding_unavailable: "You can't expand this post"
+      enable_toggle_folding: Enable post folding in this topic
+      disable_toggle_folding: Disable post folding in this topic
+    post_folding_tip:
+      tip_text: "This topic has post collapsing enabled:"
+      unfold_all: "Click here to expand all collapsed posts"
+      enfold_all: "Click here to collapse all expanded posts"

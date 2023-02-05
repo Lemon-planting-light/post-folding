@@ -13,7 +13,8 @@ register_asset "stylesheets/post_folding.scss"
 if respond_to?(:register_svg_icon)
   register_svg_icon "expand"
   register_svg_icon "compress"
-  register_svg_icon "voicemail"
+  register_svg_icon "toggle-off"
+  register_svg_icon "toggle-on"
 end
 
 module ::PostFolding
