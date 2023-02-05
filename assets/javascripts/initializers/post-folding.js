@@ -214,18 +214,18 @@ function init(api) {
           post.topic.setProperties({
             folding_enabled_by: null,
           });
-          post.setProperties({
-            in_folding_enabled_topic: false,
-          });
         } else {
           post.topic.setProperties({
             folding_enabled_by: curUser.id,
           });
-          post.setProperties({
-            in_folding_enabled_topic: true,
-          });
         }
-        this.sendWidgetAction("refreshPostStream");
+        const current = post.get("topic.postStream.posts");
+        current.forEach((p) => {
+          p.setProperties({
+            in_folding_enabled_topic: !p.in_folding_enabled_topic,
+          });
+          this.appEvents.trigger("post-stream:refresh", { id: p.id });
+        });
       })
       .catch(popupAjaxError);
   });
