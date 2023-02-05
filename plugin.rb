@@ -91,10 +91,13 @@ after_initialize do
   add_to_serializer(:post, :folded_by) do
     DB.query_single("SELECT folded_by_id FROM posts_folded fd WHERE fd.id = ?", id)[0]
   end
+
+  # stree-ignore
   add_to_serializer(:post, :in_folding_enabled_topic) do
     !@topic.folding_enabled_by.nil?
   end
 
+  # stree-ignore
   add_to_serializer(:topic_view, :folding_enabled_by) do
     topic.folding_enabled_by
   end
