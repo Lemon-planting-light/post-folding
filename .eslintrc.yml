@@ -1,0 +1,17 @@
+root: true
+extends:
+  - "eslint-config-discourse"
+  - "plugin:prettier/recommended"
+plugins:
+  - "prettier"
+env:
+  node: false
+  es6: true
+rules:
+  "no-multiple-empty-lines": [error, { max: 3 }]
+  "max-len": ["error", 120]
+  "indent": [error, 2]
+  "quotes": [error, double, { allowTemplateLiterals: true }]
+  "no-restricted-syntax":
+    - error
+    - Iterators

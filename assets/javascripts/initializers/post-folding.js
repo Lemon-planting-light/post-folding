@@ -78,18 +78,18 @@ function init(api) {
     // Not folded
     if (attrs.folded_by === null) {
       return [];
+    } else if (attrs.folded_by === curUser.id) {
+      return ["folded", "folded-by-me"];
     } else {
-      if (attrs.folded_by === curUser.id) {
-        return ["folded", "folded-by-me"];
-      } else {
-        return ["folded", "folded-by-others"];
-      }
+      return ["folded", "folded-by-others"];
     }
   });
 
   const curUser = api.getCurrentUser();
 
-  if (!curUser) { return; }
+  if (!curUser) {
+    return;
+  }
 
   api.addPostMenuButton("toggle-folding", (post) => {
     if (post.user.id !== curUser.id && !curUser.can_manipulate_post_foldings) {
@@ -106,7 +106,7 @@ function init(api) {
           title: "post_folding.toggle_folding", // TODO: add new title post_folding.toggle_folding_unavailable
           position: "second-last-hidden",
           className: "toggle-folding",
-          disabled: "true"
+          disabled: "true",
         };
       } else {
         return {
