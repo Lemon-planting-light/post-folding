@@ -88,6 +88,10 @@ after_initialize do
     @folded_by = [nil] if @folded_by.empty?
     @folded_by[0]
   end
+  add_to_serializer(:post, :in_folding_enabled_topic) do
+    return @in_folding_enabled_topic if @in_folding_enabled_topic
+    @in_folding_enabled_topic = TopicFoldingStatus.enabled?(@topic.id)
+  end
 
   add_to_serializer(:topic_view, :folding_enabled_by) do
     return @folding_enabled_by[0] if @folding_enabled_by
