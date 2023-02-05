@@ -90,7 +90,8 @@ after_initialize do
   end
 
   add_to_serializer(:topic_view, :folding_enabled_by) do
-    return @folding_enabled if @folding_enabled != nil
-    @folding_enabled = TopicFoldingStatus.find_by(id: id)&.enabled_by_id
+    return @folding_enabled_by[0] if @folding_enabled_by
+    @folding_enabled_by = [TopicFoldingStatus.find_by(id: id)&.enabled_by_id]
+    @folding_enabled_by[0]
   end
 end
