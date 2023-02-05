@@ -26,7 +26,6 @@ module ::PostFolding
 end
 
 after_initialize do
-  PostFolding.init
   load File.expand_path("../app/controllers/post_foldings_controller.rb", __FILE__)
   load File.expand_path("../app/models/topic_folding_status.rb", __FILE__)
 
@@ -39,11 +38,12 @@ after_initialize do
   end
 
   reloadable_patch do |plugin|
+    PostFolding.init
+
     class ::TopicView
       private
 
       def setup_filtered_posts
-        STDERR.puts "self: #{self}" # Sometimes the following bind may error ><
         PostFolding.orig_setup_filtered_posts.bind(self).call
         if SiteSetting.post_folding_enabled && @filter.to_s != "unfold_all" && TopicFoldingStatus.enabled?(@topic.id)
           # TODO: add topics containing folded posts to DB, to have better condition (though not quite optimizing)
