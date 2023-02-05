@@ -89,8 +89,8 @@ after_initialize do
     @folded_by[0]
   end
 
-  add_to_serializer(:basic_topic, :folding_enabled) do
+  add_to_serializer(:topic_view, :folding_enabled_by) do
     return @folding_enabled if @folding_enabled != nil
-    @folding_enabled = TopicFoldingStatus.enabled?(id)
+    @folding_enabled = TopicFoldingStatus.find_by(id: id)&.enabled_by_id
   end
 end
