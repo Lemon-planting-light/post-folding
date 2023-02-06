@@ -2,8 +2,8 @@
 
 # name: post-folding
 # about: A plugin adding support of manually folding a post
-# version: 0.0.1
-# authors: Virginia Senioria
+# version: 0.1.0
+# authors: Virginia Senioria, Linca
 # url: https://github.com/Lemon-planting-light/post-folding
 # required_version: 3.0.0
 
