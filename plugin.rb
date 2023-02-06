@@ -30,7 +30,6 @@ after_initialize do
   load File.expand_path("../app/controllers/post_foldings_controller.rb", __FILE__)
   load File.expand_path("../app/models/topic_folding_status.rb", __FILE__)
 
-  # stree-ignore
   Discourse::Application.routes.append do
     post "/post_foldings" => "post_foldings#toggle"
     get "/post_foldings/is_folding_enabled" => "post_foldings#is_folding_enabled"
@@ -74,17 +73,14 @@ after_initialize do
     !info || info.enabled_by_id == user.id
   end
 
-  # stree-ignore
-  add_to_serializer(:current_user, :can_manipulate_post_foldings) do
-    user.can_manipulate_post_foldings?
-  end
+  add_to_serializer(:current_user, :can_manipulate_post_foldings) { user.can_manipulate_post_foldings? }
   add_to_class(:user, :can_manipulate_post_foldings?) do
     in_any_groups?(SiteSetting.post_folding_manipulatable_groups_map)
   end
 
   add_to_class(:topic, :folding_enabled_by) do
     return @folding_enabled_by[0] if @folding_enabled_by
-    @folding_enabled_by = [TopicFoldingStatus.find_by(id: id)&.enabled_by_id]
+    @folding_enabled_by = [TopicFoldingStatus.find_by(id:)&.enabled_by_id]
     @folding_enabled_by[0]
   end
 
@@ -92,13 +88,8 @@ after_initialize do
     DB.query_single("SELECT folded_by_id FROM posts_folded fd WHERE fd.id = ?", id)[0]
   end
 
-  # stree-ignore
-  add_to_serializer(:post, :in_folding_enabled_topic) do
-    !@topic.folding_enabled_by.nil?
-  end
-
-  # stree-ignore
-  add_to_serializer(:topic_view, :folding_enabled_by) do
-    topic.folding_enabled_by
-  end
+  add_to_serializer(:post, :in_folding_enabled_topic) { !@topic.folding_enabled_by.nil? }
+  add_to_serializer(:topic_view, :folding_enabled_by) { topic.folding_enabled_by }
+  add_to_serializer(:post, :in_folding_capable_topic) { @topic.folding_capable? }
+  add_to_serializer(:topic_view, :folding_capable) { topic.folding_capable? }
 end

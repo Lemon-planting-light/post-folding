@@ -51,7 +51,7 @@ class PostFoldingsController < ::ApplicationController
   private
 
   def impl_set_folding_enabled(id, en)
-    topic = Topic.find_by(id: id)
+    topic = Topic.find_by(id:)
     guardian.ensure_can_see_topic!(topic)
     with_perm guardian.can_change_topic_post_folding?(topic) do
       if en

@@ -4,7 +4,7 @@ class TopicFoldingStatus < ActiveRecord::Base
   self.table_name = "topic_folding_status"
 
   def self.enabled?(id)
-    self.find_by(id: id) != nil
+    self.find_by(id:) != nil
   end
 
   def self.enable(id, en_id)
