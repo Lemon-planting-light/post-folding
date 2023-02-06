@@ -85,7 +85,7 @@ function init(api) {
     ]);
   });
 
-  api.includePostAttributes("folded_by", "in_folding_enabled_topic");
+  api.includePostAttributes("folded_by", "in_folding_enabled_topic", "in_folding_capable_topic");
 
   api.addPostClassesCallback((attrs) => {
     // Not folded
@@ -125,7 +125,7 @@ function init(api) {
       if (!curUser.can_manipulate_post_foldings && post.folded_by !== curUser.id) {
         return Object.assign(res, {
           icon: "expand",
-          title: "post_folding.unfolding_post",
+          title: "post_folding.unfolding_unavailable",
           disabled: "true",
         });
       } else {
@@ -143,15 +143,19 @@ function init(api) {
   });
 
   api.addPostMenuButton("topic-toggle-folding", (post) => {
-    if (post.user.id !== curUser.id && !curUser.can_manipulate_post_foldings) {
+    if (post.post_number !== 1) {
       return;
     }
     if (post.deleted_at) {
       return;
     }
-    if (post.post_number !== 1) {
+    if (post.user.id !== curUser.id && !curUser.can_manipulate_post_foldings) {
       return;
     }
+    if (!post.in_folding_capable_topic && !curUser.can_manipulate_post_foldings) {
+      return;
+    }
+
     const res = {
       action: "toggleFoldingEnabled",
       position: "second-last-hidden",
