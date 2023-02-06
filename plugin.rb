@@ -29,6 +29,7 @@ end
 after_initialize do
   load File.expand_path("../app/controllers/post_foldings_controller.rb", __FILE__)
   load File.expand_path("../app/models/topic_folding_status.rb", __FILE__)
+  load File.expand_path("../app/models/folded_post.rb", __FILE__)
 
   Discourse::Application.routes.append do
     post "/post_foldings" => "post_foldings#toggle"
@@ -46,9 +47,8 @@ after_initialize do
       def setup_filtered_posts
         PostFolding.orig_setup_filtered_posts.bind(self).call
         if SiteSetting.post_folding_enabled && @filter.to_s != "unfold_all" && TopicFoldingStatus.enabled?(@topic.id)
-          # TODO: add topics containing folded posts to DB, to have better condition (though not quite optimizing)
           @contains_gaps = true
-          @filtered_posts = @filtered_posts.where("posts.id NOT IN (SELECT fd.id FROM posts_folded fd)")
+          @filtered_posts = @filtered_posts.where("posts.id NOT IN (SELECT fd.id FROM folded_posts fd)")
         end
       end
     end
@@ -62,14 +62,13 @@ after_initialize do
     return true if user&.can_manipulate_post_foldings?
     is_my_own?(post)
   end
-  add_to_class(:guardian, :can_unfold_post?) do |post, folded_by|
+  add_to_class(:guardian, :can_unfold_post?) do |post|
     return true if user&.can_manipulate_post_foldings?
-    is_my_own?(post) && folded_by == post.user.id
+    is_my_own?(post) && post.user.id == FoldedPost.find_by(id: post.id)&.folded_by_id
   end
   add_to_class(:guardian, :can_change_topic_post_folding?) do |topic|
     return true if user&.can_manipulate_post_foldings?
-    return false unless is_my_own?(topic)
-    return false unless topic.folding_capable?
+    return false unless is_my_own?(topic) && topic.folding_capable?
     info = TopicFoldingStatus.find_by(id: topic.id)
     !info || info.enabled_by_id == user.id
   end
@@ -90,9 +89,7 @@ after_initialize do
       SiteSetting.post_folding_capable_tags.to_s.split("|").intersect?(tags.map(&:name))
   end
 
-  add_to_serializer(:post, :folded_by) do
-    DB.query_single("SELECT folded_by_id FROM posts_folded fd WHERE fd.id = ?", id)[0]
-  end
+  add_to_serializer(:post, :folded_by) { FoldedPost.find_by(id:)&.folded_by_id }
 
   add_to_serializer(:post, :in_folding_enabled_topic) { !@topic.folding_enabled_by.nil? }
   add_to_serializer(:topic_view, :folding_enabled_by) { topic.folding_enabled_by }

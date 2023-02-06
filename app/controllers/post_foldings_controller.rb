@@ -21,15 +21,14 @@ class PostFoldingsController < ::ApplicationController
       render json: { succeed: false, message: I18n.t("post_foldings.not_enabled_in_topic") }
       return
     end
-    info = DB.query_single("SELECT folded_by_id FROM posts_folded fd WHERE fd.id = ?", post.id)
-    if info.empty?
-      with_perm guardian.can_fold_post?(post) do
-        DB.exec "INSERT INTO posts_folded VALUES (?, ?);", post.id, guardian.user.id
+    if FoldedPost.folded?(post.id)
+      with_perm guardian.can_unfold_post?(post) do
+        FoldedPost.unfold_post(post.id)
         render json: { succeed: true, folded: true }
       end
     else
-      with_perm guardian.can_unfold_post?(post, info[0]) do
-        DB.exec "DELETE FROM posts_folded fd WHERE fd.id = ?", post.id
+      with_perm guardian.can_fold_post?(post) do
+        FoldedPost.fold_post(post.id, guardian.user.id)
         render json: { succeed: true, folded: false }
       end
     end
@@ -64,9 +63,9 @@ class PostFoldingsController < ::ApplicationController
     end
   end
 
-  def with_perm(perm, &block)
+  def with_perm(perm)
     if perm
-      block.call
+      yield
     else
       response.status = 403
       render json: { succeed: false, message: I18n.t("post_foldings.no_perm") }
