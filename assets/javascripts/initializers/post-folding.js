@@ -198,7 +198,6 @@ function init(api) {
         this.appEvents.trigger("post-stream:refresh", {
           id: post.id,
         });
-        this.appEvents.trigger("header:update-topic", post);
       })
       .catch(popupAjaxError);
   });
