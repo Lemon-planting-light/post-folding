@@ -1,14 +1,17 @@
 en:
   site_settings:
-    post_folding_enabled: Enable manual post foldings
-    post_folding_manipulatable_groups: Groups that can manipulate post foldings
+    post_folding_enabled: "Enable manual post foldings"
+    post_folding_manipulatable_groups: "Groups that can manipulate post foldings"
+    all_topics_post_folding_capable: "Whether post folding can be enabled in any topic"
+    post_folding_capable_categories: "Topics can be enabled for post folding if in these categories"
+    post_folding_capable_tags: "Topics can be enabled for post folding if have any of these tags"
   js:
     post_folding:
-      folding_post: Collapse this post
+      folding_post: "Collapse this post"
       unfolding_post: "Expand this post"
       unfolding_unavailable: "You can't expand this post"
-      enable_toggle_folding: Enable post folding in this topic
-      disable_toggle_folding: Disable post folding in this topic
+      enable_toggle_folding: "Enable post folding in this topic"
+      disable_toggle_folding: "Disable post folding in this topic"
     post_folding_tip:
       tip_text: "This topic has post collapsing enabled:"
       unfold_all: "Click here to expand all collapsed posts"

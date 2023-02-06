@@ -59,16 +59,17 @@ after_initialize do
   end
 
   add_to_class(:guardian, :can_fold_post?) do |post|
-    return true if user && user.can_manipulate_post_foldings?
+    return true if user&.can_manipulate_post_foldings?
     is_my_own?(post)
   end
   add_to_class(:guardian, :can_unfold_post?) do |post, folded_by|
-    return true if user && user.can_manipulate_post_foldings?
+    return true if user&.can_manipulate_post_foldings?
     is_my_own?(post) && folded_by == post.user.id
   end
   add_to_class(:guardian, :can_change_topic_post_folding?) do |topic|
-    return true if user && user.can_manipulate_post_foldings?
+    return true if user&.can_manipulate_post_foldings?
     return false unless is_my_own?(topic)
+    return false unless topic.folding_capable?
     info = TopicFoldingStatus.find_by(id: topic.id)
     !info || info.enabled_by_id == user.id
   end
@@ -82,6 +83,11 @@ after_initialize do
     return @folding_enabled_by[0] if @folding_enabled_by
     @folding_enabled_by = [TopicFoldingStatus.find_by(id:)&.enabled_by_id]
     @folding_enabled_by[0]
+  end
+  add_to_class(:topic, :folding_capable?) do
+    return true if SiteSetting.all_topics_post_folding_capable
+    SiteSetting.post_folding_capable_categories.to_s.split("|").map(&:to_i).include?(category.id) ||
+      SiteSetting.post_folding_capable_tags.to_s.split("|").intersect?(tags.map(&:name))
   end
 
   add_to_serializer(:post, :folded_by) do

@@ -8,4 +8,18 @@ plugins:
     list_type: compact
     default: "1|2|3|14" # by order: @admin, @moderators, @staff, @trust_level_4
     allow_any: false
-    refresh: true
+  all_topics_post_folding_capable:
+    default: false
+    client: true
+  post_folding_capable_categories:
+    client: true
+    type: category_list
+    list_type: compact
+    default: ""
+    allow_any: false
+  post_folding_capable_tags:
+    client: true
+    type: tag_list
+    list_type: compact
+    default: ""
+    allow_any: false

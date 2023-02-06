@@ -10,6 +10,7 @@ class PostFoldingsController < ::ApplicationController
       return
     end
     post = Post.find_by(id: params[:post])
+    guardian.ensure_can_see_post!(post)
     if post.post_number == 1
       response.status = 400
       render json: { succeed: false, message: I18n.t("post_foldings.no_fold_first") }
