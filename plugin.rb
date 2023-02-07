@@ -2,7 +2,7 @@
 
 # name: post-folding
 # about: A plugin adding support of manually folding a post
-# version: 0.1.0
+# version: 0.1.1
 # authors: Virginia Senioria, Linca
 # url: https://github.com/Lemon-planting-light/post-folding
 # required_version: 3.0.0
@@ -27,9 +27,11 @@ module ::PostFolding
 end
 
 after_initialize do
-  load File.expand_path("../app/controllers/post_foldings_controller.rb", __FILE__)
-  load File.expand_path("../app/models/topic_folding_status.rb", __FILE__)
-  load File.expand_path("../app/models/folded_post.rb", __FILE__)
+  %w[
+    app/controllers/post_foldings_controller.rb
+    app/models/topic_folding_status.rb
+    app/models/folded_post.rb
+  ].each { |f| load File.expand_path("../#{f}", __FILE__) }
 
   Discourse::Application.routes.append do
     post "/post_foldings" => "post_foldings#toggle"

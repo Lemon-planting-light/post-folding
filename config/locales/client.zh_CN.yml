@@ -16,3 +16,11 @@ zh_CN:
       tip_text: "本话题开启了帖子折叠功能："
       unfold_all: "点此展开所有被折叠的帖子"
       enfold_all: "点此折叠所有被展开的帖子"
+    admin:
+      logs:
+        staff_actions:
+          actions:
+            unfold_post: "展开帖子"
+            fold_post: "折叠帖子"
+            enable_topic_post_folding: "开启话题的帖子折叠"
+            disable_topic_post_folding: "关闭话题的帖子折叠"

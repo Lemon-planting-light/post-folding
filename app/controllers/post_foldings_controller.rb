@@ -24,11 +24,13 @@ class PostFoldingsController < ::ApplicationController
     if FoldedPost.folded?(post.id)
       with_perm guardian.can_unfold_post?(post) do
         FoldedPost.unfold_post(post.id)
+        StaffActionLogger.new(guardian.user).log_custom(:fold_post, post_id: post.id)
         render json: { succeed: true, folded: true }
       end
     else
       with_perm guardian.can_fold_post?(post) do
         FoldedPost.fold_post(post.id, guardian.user.id)
+        StaffActionLogger.new(guardian.user).log_custom(:unfold_post, post_id: post.id)
         render json: { succeed: true, folded: false }
       end
     end
@@ -56,8 +58,10 @@ class PostFoldingsController < ::ApplicationController
     with_perm guardian.can_change_topic_post_folding?(topic) do
       if en
         TopicFoldingStatus.enable topic.id, guardian.user.id
+        StaffActionLogger.new(guardian.user).log_custom(:enable_topic_post_folding, topic_id: id)
       else
         TopicFoldingStatus.disable topic.id
+        StaffActionLogger.new(guardian.user).log_custom(:disable_topic_post_folding, topic_id: id)
       end
       render json: { succeed: true, enabled: TopicFoldingStatus.enabled?(id) }
     end
