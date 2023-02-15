@@ -1,6 +1,6 @@
 zh_CN:
   post_foldings:
-    no_perm: 您没有足够的权限对该帖子进行折叠操作
+    no_perm: 您没有足够的权限执行此操作
     internal_error: 500 Server internal error
     no_fold_first: 您不能折叠话题的第一个帖子
     not_enabled_in_topic: 该话题已经禁用帖子折叠功能

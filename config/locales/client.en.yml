@@ -5,6 +5,7 @@ en:
     all_topics_post_folding_capable: "Whether post folding can be enabled in any topic by the topic's OP"
     post_folding_capable_categories: "Topics can be enabled for post folding by its OP if in these categories"
     post_folding_capable_tags: "Topics can be enabled for post folding by its OP if have any of these tags"
+    post_folding_disable_confirm: "Disable double confirmation before user collapses a post"
   js:
     post_folding:
       folding_post: "Collapse this post"

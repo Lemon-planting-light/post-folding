@@ -253,7 +253,7 @@ function init(api) {
     const helper = this;
     const post = helper.model;
     // Only show modal when post is folded
-    if (post.folded_by) {
+    if (post.folded_by || curUser.siteSettings?.post_folding_disable_confirm) {
       toggleFolding(helper);
     } else {
       getOwner(helper)
@@ -277,17 +277,21 @@ function init(api) {
   api.attachWidgetAction("post", "toggleFoldingEnabled", function () {
     const helper = this;
     const topic = helper.model.topic;
-    // Always show whether can_manipulate_post_foldings
-    getOwner(helper)
-      .lookup("service:dialog")
-      .confirm({
-        message: topic.folding_enabled_by
-          ? I18n.t("post_folding_confirm.disable_toggle_folding")
-          : I18n.t("post_folding_confirm.enable_toggle_folding"),
-        didConfirm: () => {
-          toggleFoldingEnabled(helper);
-        },
-      });
+    if (curUser.siteSettings?.post_folding_disable_confirm) {
+      toggleFoldingEnabled(helper);
+    } else {
+      // Always show whether can_manipulate_post_foldings
+      getOwner(helper)
+        .lookup("service:dialog")
+        .confirm({
+          message: topic.folding_enabled_by
+            ? I18n.t("post_folding_confirm.disable_toggle_folding")
+            : I18n.t("post_folding_confirm.enable_toggle_folding"),
+          didConfirm: () => {
+            toggleFoldingEnabled(helper);
+          },
+        });
+    }
   });
 }
 

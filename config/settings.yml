@@ -23,3 +23,6 @@ plugins:
     list_type: compact
     default: ""
     allow_any: false
+  post_folding_disable_confirm:
+    default: false
+    client: true

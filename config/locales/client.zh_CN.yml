@@ -5,6 +5,7 @@ zh_CN:
     all_topics_post_folding_capable: "是否所有话题都能由楼主启用帖子折叠"
     post_folding_capable_categories: "在这些类别里的话题，楼主可以启用帖子折叠"
     post_folding_capable_tags: "有这些标签之一的话题，楼主可以启用帖子折叠"
+    post_folding_disable_confirm: "禁用用户折叠帖子前的二次确认"
   js:
     post_folding:
       folding_post: "折叠帖子"
