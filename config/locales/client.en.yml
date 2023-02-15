@@ -16,6 +16,12 @@ en:
       tip_text: "This topic has post collapsing enabled:"
       unfold_all: "Click here to expand all collapsed posts"
       enfold_all: "Click here to collapse all expanded posts"
+    post_folding_by:
+      description: "Folded this post"
+    post_folding_confirm:
+      folding_post: "Collapse this post?"
+      enable_toggle_folding: "Enable post folding in this topic?"
+      disable_toggle_folding: "Disable post folding in this topic?"
     admin:
       logs:
         staff_actions:

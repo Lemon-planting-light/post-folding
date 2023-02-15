@@ -3,6 +3,7 @@ import { popupAjaxError } from "discourse/lib/ajax-error";
 import { ajax } from "discourse/lib/ajax";
 import { getOwner } from "discourse-common/lib/get-owner";
 import I18n from "I18n";
+import { avatarFor } from "discourse/widgets/post";
 
 const pluginId = "post-folding";
 
@@ -85,6 +86,20 @@ function init(api) {
     ]);
   });
 
+  api.decorateWidget("post-menu:after", (helper) => {
+    if (helper?.getModel()?.folded_by) {
+      const user = helper?.getModel()?.folded_by;
+      return helper.h("div.clearfix.small-user-list.post-folded-by", [
+        avatarFor("small", {
+          username: user.username,
+          template: user.avatar_template,
+          url: `/u/${user.username}`,
+        }),
+        helper.h("span", I18n.t("post_folding_by.description")),
+      ]);
+    } else return;
+  });
+
   api.includePostAttributes("folded_by", "in_folding_enabled_topic", "in_folding_capable_topic");
 
   api.addPostClassesCallback((attrs) => {
@@ -92,7 +107,7 @@ function init(api) {
     if (attrs.folded_by === null) {
       return [];
     } else {
-      if (attrs.folded_by === curUser.id) {
+      if (attrs.folded_by?.id === curUser?.id) {
         return ["folded", "folded-by-me"];
       } else {
         return ["folded", "folded-by-others"];
@@ -116,30 +131,27 @@ function init(api) {
     if (post.deleted_at || post.post_number === 1) {
       return;
     }
+
     const res = {
       action: "toggleFolding",
       position: "second-last-hidden",
       className: "post-toggle-folding",
     };
+    if (!curUser.can_manipulate_post_foldings) {
+      res.action = "toggleFoldingByUser";
+    }
     if (post.folded_by) {
-      if (!curUser.can_manipulate_post_foldings && post.folded_by !== curUser.id) {
-        return Object.assign(res, {
-          icon: "expand",
-          title: "post_folding.unfolding_unavailable",
-          disabled: "true",
-        });
-      } else {
-        return Object.assign(res, {
-          icon: "expand",
-          title: "post_folding.unfolding_post",
-        });
+      res.icon = "expand";
+      res.title = "post_folding.unfolding_post";
+      if (!curUser.can_manipulate_post_foldings && post.folded_by?.id !== curUser.id) {
+        res.action = "toggleFoldingDisabled";
+        res.title = "post_folding.unfolding_unavailable";
       }
     } else {
-      return Object.assign(res, {
-        icon: "compress",
-        title: "post_folding.folding_post",
-      });
+      res.icon = "compress";
+      res.title = "post_folding.folding_post";
     }
+    return res;
   });
 
   api.addPostMenuButton("topic-toggle-folding", (post) => {
@@ -174,16 +186,15 @@ function init(api) {
     }
   });
 
-  // Arrow functions won't take this, so use functions
-  api.attachWidgetAction("post", "toggleFolding", function () {
-    const post = this.model;
+  function toggleFolding(helper) {
+    const post = helper.model;
     ajax("/post_foldings", {
       method: "POST",
       data: { post: post.id },
     })
       .then((res) => {
         if (!res.succeed) {
-          getOwner(this).lookup("service:dialog").alert(res.message);
+          getOwner(helper).lookup("service:dialog").alert(res.message);
           return;
         }
         if (post.folded_by) {
@@ -192,25 +203,25 @@ function init(api) {
           });
         } else {
           post.setProperties({
-            folded_by: curUser.id,
+            folded_by: curUser,
           });
         }
-        this.appEvents.trigger("post-stream:refresh", {
+        helper.appEvents.trigger("post-stream:refresh", {
           id: post.id,
         });
       })
       .catch(popupAjaxError);
-  });
+  }
 
-  api.attachWidgetAction("post", "toggleFoldingEnabled", function () {
-    const post = this.model;
+  function toggleFoldingEnabled(helper) {
+    const post = helper.model;
     ajax("/post_foldings/toggle_folding_enabled", {
       method: "POST",
       data: { topic: post.topic.id },
     })
       .then((res) => {
         if (!res.succeed) {
-          getOwner(this).lookup("service:dialog").alert(res.message);
+          getOwner(helper).lookup("service:dialog").alert(res.message);
           return;
         }
         if (post.topic.folding_enabled_by) {
@@ -219,7 +230,7 @@ function init(api) {
           });
         } else {
           post.topic.setProperties({
-            folding_enabled_by: curUser.id,
+            folding_enabled_by: curUser,
           });
         }
         const current = post.get("topic.postStream.posts");
@@ -227,10 +238,56 @@ function init(api) {
           p.setProperties({
             in_folding_enabled_topic: !p.in_folding_enabled_topic,
           });
-          this.appEvents.trigger("post-stream:refresh", { id: p.id });
+          helper.appEvents.trigger("post-stream:refresh", { id: p.id });
         });
       })
       .catch(popupAjaxError);
+  }
+
+  // Arrow functions won't take this, so use functions
+  api.attachWidgetAction("post", "toggleFolding", function () {
+    const helper = this;
+    toggleFolding(helper);
+  });
+  api.attachWidgetAction("post", "toggleFoldingByUser", function () {
+    const helper = this;
+    const post = helper.model;
+    // Only show modal when post is folded
+    if (post.folded_by) {
+      toggleFolding(helper);
+    } else {
+      getOwner(helper)
+        .lookup("service:dialog")
+        .confirm({
+          message: I18n.t("post_folding_confirm.folding_post"),
+          didConfirm: () => {
+            toggleFolding(helper);
+          },
+        });
+    }
+  });
+  api.attachWidgetAction("post", "toggleFoldingDisabled", function () {
+    getOwner(this)
+      .lookup("service:dialog")
+      .alert({
+        message: I18n.t("post_folding.unfolding_unavailable"),
+      });
+  });
+
+  api.attachWidgetAction("post", "toggleFoldingEnabled", function () {
+    const helper = this;
+    const topic = helper.model.topic;
+    // Always show whether can_manipulate_post_foldings
+    getOwner(helper)
+      .lookup("service:dialog")
+      .confirm({
+        message: topic.folding_enabled_by
+          ? I18n.t("post_folding_confirm.disable_toggle_folding")
+          : I18n.t("post_folding_confirm.enable_toggle_folding"),
+        didConfirm: () => {
+          toggleFoldingEnabled(helper);
+        },
+      });
   });
 }
 
