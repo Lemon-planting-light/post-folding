@@ -82,19 +82,22 @@ after_initialize do
 
   add_to_class(:topic, :folding_enabled_by) do
     return @folding_enabled_by[0] if @folding_enabled_by
-    @folding_enabled_by = [TopicFoldingStatus.find_by(id:)&.enabled_by_id]
+    @folding_enabled_by = [TopicFoldingStatus.find_by(id:)&.enabled_by]
     @folding_enabled_by[0]
   end
   add_to_class(:topic, :folding_capable?) do
     return true if SiteSetting.all_topics_post_folding_capable
-    SiteSetting.post_folding_capable_categories.to_s.split("|").map(&:to_i).include?(category.id) ||
+    return @folding_capable if @folding_capable
+    @folding_capable = SiteSetting.post_folding_capable_categories.to_s.split("|").map(&:to_i).include?(category.id) ||
       SiteSetting.post_folding_capable_tags.to_s.split("|").intersect?(tags.map(&:name))
   end
 
-  add_to_serializer(:post, :folded_by) { FoldedPost.find_by(id:)&.folded_by_id }
+  add_to_serializer(:post, :folded_by) do
+    BasicUserSerializer.new(FoldedPost.find_by(id:)&.folded_by, root: false).as_json
+  end
 
   add_to_serializer(:post, :in_folding_enabled_topic) { !@topic.folding_enabled_by.nil? }
-  add_to_serializer(:topic_view, :folding_enabled_by) { topic.folding_enabled_by }
+  add_to_serializer(:topic_view, :folding_enabled_by) { BasicUserSerializer.new(topic.folding_enabled_by, root: false).as_json }
   add_to_serializer(:post, :in_folding_capable_topic) { @topic.folding_capable? }
   add_to_serializer(:topic_view, :folding_capable) { topic.folding_capable? }
 end

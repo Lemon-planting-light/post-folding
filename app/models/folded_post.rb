@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class FoldedPost < ActiveRecord::Base
+  belongs_to :folded_by, class_name: :User, foreign_key: :folded_by_id
+
   def self.folded?(id)
     self.exists?(id:)
   end

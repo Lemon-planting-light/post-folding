@@ -3,6 +3,8 @@
 class TopicFoldingStatus < ActiveRecord::Base
   self.table_name = "topic_folding_status"
 
+  belongs_to :enabled_by, class_name: :User, foreign_key: :enabled_by_id
+
   def self.enabled?(id)
     self.exists?(id:)
   end
