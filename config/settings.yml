@@ -8,6 +8,19 @@ plugins:
     list_type: compact
     default: "1|2|3|14" # by order: @admin, @moderators, @staff, @trust_level_4
     allow_any: false
+  post_folding_banned_groups:
+    client: true
+    type: group_list
+    list_type: compact
+    default: "10" # @trust_level_0
+    allow_any: false
+  post_folding_banned_users:
+    client: true
+    type: list
+    list_type: compact
+    default: ""
+    choices: "User.where('username IS NOT NULL').map { |x| x.username }"
+    allow_any: false
   all_topics_post_folding_capable:
     default: false
     client: true

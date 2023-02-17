@@ -64,26 +64,34 @@ after_initialize do
   end
 
   add_to_class(:guardian, :can_fold_post?) do |post|
+    return false if user&.banned_for_post_foldings?
     return true if user&.can_manipulate_post_foldings?
     return false unless FoldedPost.cooled_down?(post.id)
     is_my_own?(post)
   end
   add_to_class(:guardian, :can_unfold_post?) do |post|
+    return false if user&.banned_for_post_foldings?
     return true if user&.can_manipulate_post_foldings?
     return false unless FoldedPost.cooled_down?(post.id)
     is_my_own?(post) && post.user.id == FoldedPost.find_by(id: post.id)&.folded_by_id
   end
   add_to_class(:guardian, :can_change_topic_post_folding?) do |topic|
+    return false if user&.banned_for_post_foldings?
     return true if user&.can_manipulate_post_foldings?
     return false unless is_my_own?(topic) && topic.folding_capable?
     return false unless TopicFoldingStatus.cooled_down?(topic.id)
     info = TopicFoldingStatus.find_by(id: topic.id)
-    !info || user.id == info.enabled_by_id
+    info&.enabled_by_id.nil? || user.id == info.enabled_by_id
   end
 
   add_to_serializer(:current_user, :can_manipulate_post_foldings) { user.can_manipulate_post_foldings? }
   add_to_class(:user, :can_manipulate_post_foldings?) do
     in_any_groups?(SiteSetting.post_folding_manipulatable_groups_map)
+  end
+  add_to_serializer(:current_user, :is_banned_for_post_foldings) { user.banned_for_post_foldings? }
+  add_to_class(:user, :banned_for_post_foldings?) do
+    return true if SiteSetting.post_folding_banned_users.to_s.split("|").include?(username)
+    in_any_groups?(SiteSetting.post_folding_banned_groups_map) && !can_manipulate_post_foldings?
   end
 
   add_to_class(:topic, :folding_enabled_by) do

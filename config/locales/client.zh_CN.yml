@@ -2,6 +2,8 @@ zh_CN:
   site_settings:
     post_folding_enabled: "启用帖子折叠插件"
     post_folding_manipulatable_groups: "无论如何都可以管理帖子折叠状态的组"
+    post_folding_banned_groups: "不能操作帖子折叠相关的东西的组"
+    post_folding_banned_users: "不能操作帖子折叠相关的东西的用户"
     all_topics_post_folding_capable: "是否所有话题都能由楼主启用帖子折叠"
     post_folding_capable_categories: "在这些类别里的话题，楼主可以启用帖子折叠"
     post_folding_capable_tags: "有这些标签之一的话题，楼主可以启用帖子折叠"
