@@ -24,6 +24,10 @@ module ::PostFolding
   def self.orig_setup_filtered_posts
     @@orig_setup_filtered_posts
   end
+
+  %i[BYPASS_CD WAIT_FOR_CD CD_ENDED NO_PERMISSION].each do |name|
+    self.define_singleton_method(name) { name.to_s }
+  end
 end
 
 after_initialize do
@@ -63,28 +67,29 @@ after_initialize do
     end
   end
 
-  add_to_class(:guardian, :can_fold_post?) do |post|
-    return false if post.locked? && !is_staff?
-    return false if user&.banned_for_post_foldings?
-    return true if user&.can_manipulate_post_foldings?
-    return false unless is_my_own?(post) && can_edit?(post)
-    FoldedPost.cooled_down?(post.id) && FoldedPost.find_by(id: post.id)&.folded_by_id.nil?
+  add_to_class(:guardian, :toggle_post_folding_perm) do |post|
+    return PostFolding.NO_PERMISSION if post.locked? && !is_staff?
+    return PostFolding.NO_PERMISSION if user&.banned_for_post_foldings?
+    return PostFolding.BYPASS_CD if user&.can_manipulate_post_foldings? || is_staff?
+    return PostFolding.NO_PERMISSION unless is_my_own?(post) && can_edit?(post)
+    info = FoldedPost.find_by(id: post.id)
+    return PostFolding.NO_PERMISSION unless info&.folded_by_id.nil? || post.user.id == info.folded_by_id
+    FoldedPost.cooled_down?(post.id) ? PostFolding.CD_ENDED : PostFolding.WAIT_FOR_CD
   end
-  add_to_class(:guardian, :can_unfold_post?) do |post|
-    return false if post.locked? && !is_staff?
-    return false if user&.banned_for_post_foldings?
-    return true if user&.can_manipulate_post_foldings?
-    return false unless is_my_own?(post) && can_edit?(post)
-    FoldedPost.cooled_down?(post.id) && post.user.id == FoldedPost.find_by(id: post.id)&.folded_by_id
+  add_to_class(:guardian, :can_toggle_post_folding?) do |post|
+    [PostFolding.BYPASS_CD, PostFolding.CD_ENDED].include?(toggle_post_folding_perm(post))
+  end
+  add_to_class(:guardian, :change_topic_post_folding_perm) do |topic|
+    return PostFolding.NO_PERMISSION if user&.banned_for_post_foldings?
+    return PostFolding.BYPASS_CD if user&.can_manipulate_post_foldings?
+    return PostFolding.NO_PERMISSION if topic.archived?
+    return PostFolding.NO_PERMISSION unless is_my_own?(topic) && can_edit?(topic) && topic.folding_capable?
+    info = TopicFoldingStatus.find_by(id: topic.id)
+    return PostFolding.NO_PERMISSION unless info&.enabled_by_id.nil? || user.id == info.enabled_by_id
+    TopicFoldingStatus.cooled_down?(topic.id) ? PostFolding.CD_ENDED : PostFolding.WAIT_FOR_CD
   end
   add_to_class(:guardian, :can_change_topic_post_folding?) do |topic|
-    return false if user&.banned_for_post_foldings?
-    return true if user&.can_manipulate_post_foldings?
-    return false if topic.archived?
-    return false unless is_my_own?(topic) && can_edit?(topic) && topic.folding_capable?
-    return false unless TopicFoldingStatus.cooled_down?(topic.id)
-    info = TopicFoldingStatus.find_by(id: topic.id)
-    info&.enabled_by_id.nil? || user.id == info.enabled_by_id
+    [PostFolding.BYPASS_CD, PostFolding.CD_ENDED].include?(change_topic_post_folding_perm(topic))
   end
 
   add_to_serializer(:current_user, :can_manipulate_post_foldings) { user.can_manipulate_post_foldings? }
@@ -114,13 +119,16 @@ after_initialize do
     BasicUserSerializer.new(FoldedPost.find_by(id:)&.folded_by, root: false).as_json
   end
 
-  add_to_serializer(:post, :can_fold) { scope.can_fold_post?(object) }
-  add_to_serializer(:post, :can_unfold) { scope.can_unfold_post?(object) }
+  add_to_serializer(:post, :toggle_post_folding_perm) { scope.toggle_post_folding_perm(object) }
+  add_to_serializer(:post, :can_toggle_post_folding) { scope.can_toggle_post_folding?(object) }
+  add_to_serializer(:post, :folded_changed_at) { FoldedPost.find_by(id: object.id)&.changed_at }
   add_to_serializer(:post, :in_folding_enabled_topic) { !@topic.folding_enabled_by.nil? }
   add_to_serializer(:topic_view, :folding_enabled_by) do
     BasicUserSerializer.new(topic.folding_enabled_by, root: false).as_json
   end
+  add_to_serializer(:post, :folding_enabled_changed_at) { TopicFoldingStatus.find_by(id: @topic.id)&.changed_at }
   add_to_serializer(:post, :in_folding_capable_topic) { @topic.folding_capable? }
+  add_to_serializer(:post, :change_topic_post_folding_perm) { scope.change_topic_post_folding_perm(@topic) }
   add_to_serializer(:post, :can_change_topic_post_folding) { scope.can_change_topic_post_folding?(@topic) }
   add_to_serializer(:topic_view, :folding_capable) { topic.folding_capable? }
 end
