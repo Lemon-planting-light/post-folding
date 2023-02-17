@@ -2,7 +2,7 @@ en:
   site_settings:
     post_folding_enabled: "Enable manual post foldings"
     post_folding_manipulatable_groups: "Groups that can manipulate post foldings"
-    post_folding_banned_groups: "Groups that are banned from manipulating post folding related stuff"
+    post_folding_allowed_groups: "Groups that are allowed to manipulate post folding related stuff"
     post_folding_banned_users: "Users that are banned from manipulating post folding related stuff"
     all_topics_post_folding_capable: "Whether post folding can be enabled in any topic by the topic's OP"
     post_folding_capable_categories: "Topics can be enabled for post folding by its OP if in these categories"

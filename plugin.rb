@@ -66,14 +66,14 @@ after_initialize do
   add_to_class(:guardian, :can_fold_post?) do |post|
     return false if user&.banned_for_post_foldings?
     return true if user&.can_manipulate_post_foldings?
-    return false unless FoldedPost.cooled_down?(post.id)
-    is_my_own?(post)
+    return false unless is_my_own?(post) && post.folding_capable?
+    FoldedPost.cooled_down?(post.id) && FoldedPost.find_by(id: post.id)&.folded_by_id.nil?
   end
   add_to_class(:guardian, :can_unfold_post?) do |post|
     return false if user&.banned_for_post_foldings?
     return true if user&.can_manipulate_post_foldings?
-    return false unless FoldedPost.cooled_down?(post.id)
-    is_my_own?(post) && post.user.id == FoldedPost.find_by(id: post.id)&.folded_by_id
+    return false unless is_my_own?(post) && post.folding_capable?
+    FoldedPost.cooled_down?(post.id) && post.user.id == FoldedPost.find_by(id: post.id)&.folded_by_id
   end
   add_to_class(:guardian, :can_change_topic_post_folding?) do |topic|
     return false if user&.banned_for_post_foldings?
@@ -91,7 +91,7 @@ after_initialize do
   add_to_serializer(:current_user, :is_banned_for_post_foldings) { user.banned_for_post_foldings? }
   add_to_class(:user, :banned_for_post_foldings?) do
     return true if SiteSetting.post_folding_banned_users.to_s.split("|").include?(username)
-    in_any_groups?(SiteSetting.post_folding_banned_groups_map) && !can_manipulate_post_foldings?
+    !in_any_groups?(SiteSetting.post_folding_allowed_groups_map) && !can_manipulate_post_foldings?
   end
 
   add_to_class(:topic, :folding_enabled_by) do
@@ -100,11 +100,16 @@ after_initialize do
     @folding_enabled_by[0]
   end
   add_to_class(:topic, :folding_capable?) do
+    return false if archived?
     return true if SiteSetting.all_topics_post_folding_capable
     return @folding_capable if @folding_capable
     @folding_capable =
       SiteSetting.post_folding_capable_categories.to_s.split("|").map(&:to_i).include?(category.id) ||
         SiteSetting.post_folding_capable_tags.to_s.split("|").intersect?(tags.map(&:name))
+  end
+  add_to_class(:post, :folding_capable?) do
+    return false unless topic.folding_capable?
+    !locked?
   end
 
   add_to_serializer(:post, :folded_by) do
@@ -112,6 +117,7 @@ after_initialize do
   end
 
   add_to_serializer(:post, :in_folding_enabled_topic) { !@topic.folding_enabled_by.nil? }
+  add_to_serializer(:post, :folding_capable) { object.folding_capable? }
   add_to_serializer(:topic_view, :folding_enabled_by) do
     BasicUserSerializer.new(topic.folding_enabled_by, root: false).as_json
   end
