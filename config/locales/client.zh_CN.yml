@@ -6,6 +6,10 @@ zh_CN:
     post_folding_capable_categories: "在这些类别里的话题，楼主可以启用帖子折叠"
     post_folding_capable_tags: "有这些标签之一的话题，楼主可以启用帖子折叠"
     post_folding_disable_confirm: "禁用用户折叠帖子前的二次确认"
+    fold_post_cooldown: "帖子可以再次被折叠之前的冷却时间, 以秒为单位"
+    unfold_post_cooldown: "帖子可以再次被取消折叠之前的冷却时间, 以秒为单位"
+    topic_enable_post_folding_dooldown: "话题可以再次启用帖子折叠之前的冷却时间, 以秒为单位"
+    topic_disable_post_folding_cooldown: "话题可以再次折叠之前的冷却时间, 以秒为单位"
   js:
     post_folding:
       folding_post: "折叠帖子"

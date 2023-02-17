@@ -50,7 +50,10 @@ after_initialize do
         PostFolding.orig_setup_filtered_posts.bind(self).call
         if SiteSetting.post_folding_enabled && @filter.to_s != "unfold_all" && TopicFoldingStatus.enabled?(@topic.id)
           @contains_gaps = true
-          @filtered_posts = @filtered_posts.where("posts.id NOT IN (SELECT fd.id FROM folded_posts fd)")
+          @filtered_posts =
+            @filtered_posts.where(
+              "posts.id NOT IN (SELECT fd.id FROM folded_posts fd WHERE fd.folded_by_id IS NOT NULL)",
+            )
         end
       end
     end
@@ -62,17 +65,20 @@ after_initialize do
 
   add_to_class(:guardian, :can_fold_post?) do |post|
     return true if user&.can_manipulate_post_foldings?
+    return false unless FoldedPost.cooled_down?(post.id)
     is_my_own?(post)
   end
   add_to_class(:guardian, :can_unfold_post?) do |post|
     return true if user&.can_manipulate_post_foldings?
+    return false unless FoldedPost.cooled_down?(post.id)
     is_my_own?(post) && post.user.id == FoldedPost.find_by(id: post.id)&.folded_by_id
   end
   add_to_class(:guardian, :can_change_topic_post_folding?) do |topic|
     return true if user&.can_manipulate_post_foldings?
     return false unless is_my_own?(topic) && topic.folding_capable?
+    return false unless TopicFoldingStatus.cooled_down?(topic.id)
     info = TopicFoldingStatus.find_by(id: topic.id)
-    !info || info.enabled_by_id == user.id
+    !info || user.id == info.enabled_by_id
   end
 
   add_to_serializer(:current_user, :can_manipulate_post_foldings) { user.can_manipulate_post_foldings? }
@@ -88,8 +94,9 @@ after_initialize do
   add_to_class(:topic, :folding_capable?) do
     return true if SiteSetting.all_topics_post_folding_capable
     return @folding_capable if @folding_capable
-    @folding_capable = SiteSetting.post_folding_capable_categories.to_s.split("|").map(&:to_i).include?(category.id) ||
-      SiteSetting.post_folding_capable_tags.to_s.split("|").intersect?(tags.map(&:name))
+    @folding_capable =
+      SiteSetting.post_folding_capable_categories.to_s.split("|").map(&:to_i).include?(category.id) ||
+        SiteSetting.post_folding_capable_tags.to_s.split("|").intersect?(tags.map(&:name))
   end
 
   add_to_serializer(:post, :folded_by) do
@@ -97,7 +104,9 @@ after_initialize do
   end
 
   add_to_serializer(:post, :in_folding_enabled_topic) { !@topic.folding_enabled_by.nil? }
-  add_to_serializer(:topic_view, :folding_enabled_by) { BasicUserSerializer.new(topic.folding_enabled_by, root: false).as_json }
+  add_to_serializer(:topic_view, :folding_enabled_by) do
+    BasicUserSerializer.new(topic.folding_enabled_by, root: false).as_json
+  end
   add_to_serializer(:post, :in_folding_capable_topic) { @topic.folding_capable? }
   add_to_serializer(:topic_view, :folding_capable) { topic.folding_capable? }
 end

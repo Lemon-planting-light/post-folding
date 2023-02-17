@@ -26,3 +26,19 @@ plugins:
   post_folding_disable_confirm:
     default: false
     client: true
+  fold_post_cooldown:
+    client: true
+    type: integer
+    default: 10
+  unfold_post_cooldown:
+    client: true
+    type: integer
+    default: 10
+  topic_enable_post_folding_dooldown:
+    client: true
+    type: integer
+    default: 10
+  topic_disable_post_folding_cooldown:
+    client: true
+    type: integer
+    default: 10

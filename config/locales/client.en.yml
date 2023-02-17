@@ -6,6 +6,10 @@ en:
     post_folding_capable_categories: "Topics can be enabled for post folding by its OP if in these categories"
     post_folding_capable_tags: "Topics can be enabled for post folding by its OP if have any of these tags"
     post_folding_disable_confirm: "Disable double confirmation before user collapses a post"
+    fold_post_cooldown: "Cooldown before a post can be refolded by its creator after it's unfolded, by seconds"
+    unfold_post_cooldown: "Cooldown before a post can be unfolded by its creator after it's folded, by seconds"
+    topic_enable_post_folding_dooldown: "Cooldown before post folding can be enabled in a topic after it's disabled, by seconds"
+    topic_disable_post_folding_cooldown: "Cooldown before post folding can be disabled in a topic after it's enabled, by seconds"
   js:
     post_folding:
       folding_post: "Collapse this post"
