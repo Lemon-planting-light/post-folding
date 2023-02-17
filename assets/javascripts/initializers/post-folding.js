@@ -117,7 +117,7 @@ function init(api) {
 
   const curUser = api.getCurrentUser();
 
-  if (!curUser) {
+  if (!curUser || curUser.is_banned_for_post_foldings) {
     return;
   }
 
