@@ -117,7 +117,7 @@ function init(api) {
 
   const curUser = api.getCurrentUser();
 
-  if (!curUser) {
+  if (!curUser || curUser.is_banned_for_post_foldings) {
     return;
   }
 
@@ -125,7 +125,10 @@ function init(api) {
     if (post.in_folding_enabled_topic !== true) {
       return;
     }
-    if (post.user_id !== curUser.id && !curUser.can_manipulate_post_foldings) {
+    if ((post.user_id !== curUser.id || !post.canEdit) && !curUser.can_manipulate_post_foldings) {
+      return;
+    }
+    if (post.locked && !curUser.staff) {
       return;
     }
     if (post.deleted_at || post.post_number === 1) {
@@ -161,7 +164,7 @@ function init(api) {
     if (post.deleted_at) {
       return;
     }
-    if (post.user_id !== curUser.id && !curUser.can_manipulate_post_foldings) {
+    if ((post.user_id !== curUser.id || !post.canEdit) && !curUser.can_manipulate_post_foldings) {
       return;
     }
     if (!post.in_folding_capable_topic && !curUser.can_manipulate_post_foldings) {
