@@ -25,9 +25,7 @@ module ::PostFolding
     @@orig_setup_filtered_posts
   end
 
-  %i[BYPASS_CD WAIT_FOR_CD CD_ENDED NO_PERMISSION].each do |name|
-    self.define_singleton_method(name) { name.to_s }
-  end
+  %i[BYPASS_CD WAIT_FOR_CD CD_ENDED NO_PERMISSION].each { |name| self.define_singleton_method(name) { name.to_s } }
 end
 
 after_initialize do
@@ -68,6 +66,7 @@ after_initialize do
   end
 
   add_to_class(:guardian, :toggle_post_folding_perm) do |post|
+    return PostFolding.NO_PERMISSION unless post
     return PostFolding.NO_PERMISSION if post.locked? && !is_staff?
     return PostFolding.NO_PERMISSION if user&.banned_for_post_foldings?
     return PostFolding.BYPASS_CD if user&.can_manipulate_post_foldings? || is_staff?
@@ -80,6 +79,7 @@ after_initialize do
     [PostFolding.BYPASS_CD, PostFolding.CD_ENDED].include?(toggle_post_folding_perm(post))
   end
   add_to_class(:guardian, :change_topic_post_folding_perm) do |topic|
+    return PostFolding.NO_PERMISSION unless topic
     return PostFolding.NO_PERMISSION if user&.banned_for_post_foldings?
     return PostFolding.BYPASS_CD if user&.can_manipulate_post_foldings?
     return PostFolding.NO_PERMISSION if topic.archived?
@@ -111,7 +111,7 @@ after_initialize do
     return true if SiteSetting.all_topics_post_folding_capable
     return @folding_capable if @folding_capable
     @folding_capable =
-      SiteSetting.post_folding_capable_categories.to_s.split("|").map(&:to_i).include?(category.id) ||
+      SiteSetting.post_folding_capable_categories.to_s.split("|").map(&:to_i).include?(category&.id) ||
         SiteSetting.post_folding_capable_tags.to_s.split("|").intersect?(tags.map(&:name))
   end
 
