@@ -122,9 +122,9 @@ after_initialize do
   add_to_serializer(:post, :toggle_post_folding_perm) { scope.toggle_post_folding_perm(object) }
   add_to_serializer(:post, :can_toggle_post_folding) { scope.can_toggle_post_folding?(object) }
   add_to_serializer(:post, :folded_changed_at) { FoldedPost.find_by(id: object.id)&.changed_at }
-  add_to_serializer(:post, :in_folding_enabled_topic) { !@topic.folding_enabled_by.nil? }
+  add_to_serializer(:post, :in_folding_enabled_topic) { !@topic&.folding_enabled_by.nil? }
   add_to_serializer(:topic_view, :folding_enabled_by) do
-    BasicUserSerializer.new(topic.folding_enabled_by, root: false).as_json
+    BasicUserSerializer.new(object.topic&.folding_enabled_by, root: false).as_json
   end
   add_to_serializer(:post, :folding_enabled_changed_at) { TopicFoldingStatus.find_by(id: @topic.id)&.changed_at }
   add_to_serializer(:post, :in_folding_capable_topic) { @topic.folding_capable? }
